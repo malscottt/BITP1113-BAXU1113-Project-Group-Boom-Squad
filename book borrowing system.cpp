@@ -49,8 +49,12 @@ int main() {
     cout << "Enter customer name: ";
     getline(cin, customer);
 
-    cout << "How many books to borrow? ";
-    cin >> n;
+   cout << "How many books to borrow? ";
+while (!(cin >> n)) {
+    cout << "Error! Please enter numbers only: ";
+    cin.clear();
+    cin.ignore(1000, '\n');
+}
     cin.ignore();
 
     vector<Book> library(n); 
