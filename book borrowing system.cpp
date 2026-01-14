@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <limits> // Required for numeric_limits
+#include <sstream>
 
 using namespace std;
 
@@ -12,8 +14,8 @@ const double FINE_PER_DAY = 2.0; // Fine amount per overdue day
 // Structure to represent a single book transaction
 struct Book {
     string name;                 // Title of the book
-    int bDay, bMonth, bYear;     // Date borrowed
-    int rDay, rMonth, rYear;     // Date returned
+    int bDay = 0, bMonth = 0, bYear = 0;     // Date borrowed (default 0)
+    int rDay = 0, rMonth = 0, rYear = 0;     // Date returned (default 0)
 };
 
 // Array storing days in each month (index 1 = Jan, 2 = Feb, etc.)
@@ -51,7 +53,7 @@ int main() {
     int n;
 
     // --- Input Customer Details ---
-    cout << "===== Library Borrowing System =====\n";
+    cout << "===== Library Borrowing System v2.0 =====\n";
     cout << "Enter customer name: ";
     getline(cin, customer);
 
@@ -61,9 +63,9 @@ int main() {
     while (!(cin >> n)) {
         cout << "Error! Please enter numbers only: ";
         cin.clear();              // Clear error flag
-        cin.ignore(1000, '\n');   // Discard invalid input
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');   // Discard invalid input
     }
-    cin.ignore(); // Clear newline character left in buffer
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear newline character left in buffer
 
     vector<Book> library(n); // Vector to store details of 'n' books
 
@@ -75,56 +77,50 @@ int main() {
         // --- Input Borrow Date with Validation ---
         while (true) {
             cout << "Borrow Date (DD MM YYYY): ";
-            cin >> library[i].bDay >> library[i].bMonth >> library[i].bYear;
-
-            // Check if input format is valid (numbers)
-            if (cin.fail()) {
-                cin.clear();
-                cin.ignore(1000, '\n');
+            string line;
+            if (!getline(cin, line)) { // Check for EOF
+                 return 0;
+            }
+            stringstream ss(line);
+            if (ss >> library[i].bDay >> library[i].bMonth >> library[i].bYear) {
+                 // Check valid date logic
+                if (isValidDate(library[i].bDay, library[i].bMonth, library[i].bYear)) {
+                    break; // Valid date
+                }
+                cout << "Invalid Date! Please enter again.\n";
+            } else {
                 cout << "Invalid input! Please enter numbers only.\n";
-                continue;
             }
-
-            // Check if logical date is valid
-            if (isValidDate(library[i].bDay, library[i].bMonth, library[i].bYear)) {
-                break; // Valid date, exit loop
-            }
-
-            cout << "Invalid Date! Please enter again.\n";
         }
 
         // --- Input Return Date with Validation ---
         while (true) {
             cout << "Return Date (DD MM YYYY): ";
-            cin >> library[i].rDay >> library[i].rMonth >> library[i].rYear;
-
-            if (cin.fail()) {
-                cin.clear();
-                cin.ignore(1000, '\n');
-                cout << "Invalid input! Please enter numbers only.\n";
-                continue;
+            string line;
+            if (!getline(cin, line)) {
+                return 0;
             }
+            stringstream ss(line);
+            if (ss >> library[i].rDay >> library[i].rMonth >> library[i].rYear) {
+                 if (isValidDate(library[i].rDay, library[i].rMonth, library[i].rYear)) {
+                    // Calculate total days for comparison
+                    long long borrowDays = convertToDays(
+                        library[i].bDay, library[i].bMonth, library[i].bYear);
+                    long long returnDays = convertToDays(
+                        library[i].rDay, library[i].rMonth, library[i].rYear);
 
-            if (!isValidDate(library[i].rDay, library[i].rMonth, library[i].rYear)) {
-                cout << "Invalid Date! Please enter again.\n";
-                continue;
+                    // Ensure return date is not before borrow date
+                    if (returnDays < borrowDays) {
+                        cout << "Error! Return date cannot be before borrow date.\n";
+                        continue;
+                    }
+                    break; // Valid return date
+                 }
+                 cout << "Invalid Date! Please enter again.\n";
+            } else {
+                 cout << "Invalid input! Please enter numbers only.\n";
             }
-
-            // Calculate total days for comparison
-            long long borrowDays = convertToDays(
-                library[i].bDay, library[i].bMonth, library[i].bYear);
-            long long returnDays = convertToDays(
-                library[i].rDay, library[i].rMonth, library[i].rYear);
-
-            // Ensure return date is not before borrow date
-            if (returnDays < borrowDays) {
-                cout << "Error! Return date cannot be before borrow date.\n";
-                continue;
-            }
-
-            break; // Valid return date, exit loop
         }
-        cin.ignore(); // Clean buffer for next loop iteration
     }
 
     cout << "\n========================================\n";
